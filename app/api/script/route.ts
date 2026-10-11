@@ -17,7 +17,7 @@ Start with a strong hook in the first sentence. Use short, punchy sentences.
 Output only the spoken narration, with no scene directions, labels or emojis.`;
 
   const res = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flashlash:generateContent",
     {
       method: "POST",
       headers: {
