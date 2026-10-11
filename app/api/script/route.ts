@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  const { topic } = await req.json();
+  const { topic, style, length } = await req.json();
 
   if (!topic || typeof topic !== "string") {
     return NextResponse.json({ error: "Topic is required" }, { status: 400 });
@@ -12,9 +12,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing API key" }, { status: 500 });
   }
 
-  const prompt = `Write a faceless short-form video script (about 30 seconds, 70 to 90 words) on this topic: "${topic}".
-Start with a strong hook in the first sentence. Use short, punchy sentences.
-Output only the spoken narration, with no scene directions, labels or emojis.`;
+  const seconds = [30, 45, 60].includes(length) ? length : 30;
+  const words = seconds === 60 ? 150 : seconds === 45 ? 110 : 75;
+
+  const prompt = `You are an expert scriptwriter for viral faceless short-form videos (TikTok, Reels, YouTube Shorts).
+Topic: "${topic}"
+Style: ${style || "Educational facts"}
+Length: about ${seconds} seconds, roughly ${words} words of narration in total.
+
+Return ONLY valid JSON in exactly this shape:
+{
+  "title": "catchy video title",
+  "hook": "the first spoken line, a scroll-stopping hook",
+  "scenes": [
+    { "narration": "spoken words for this scene", "visual": "what should be on screen, described in 4 to 8 words" }
+  ],
+  "cta": "short closing call to action",
+  "caption": "post caption under 150 characters",
+  "hashtags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
+}
+
+Rules:
+- The first scene's narration must start with the hook.
+- Use 5 to 8 scenes with short, punchy sentences.
+- Visuals must be filmable stock footage ideas, with no on-screen people speaking.
+- No emojis. Hashtags without the # symbol.`;
 
   const res = await fetch(
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
@@ -26,6 +48,7 @@ Output only the spoken narration, with no scene directions, labels or emojis.`;
       },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: "application/json" },
       }),
     }
   );
@@ -39,11 +62,19 @@ Output only the spoken narration, with no scene directions, labels or emojis.`;
     );
   }
 
-  const script = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-  if (!script) {
+  if (!text) {
     return NextResponse.json({ error: "No script returned" }, { status: 500 });
   }
 
-  return NextResponse.json({ script });
+  try {
+    const result = JSON.parse(text);
+    return NextResponse.json({ result });
+  } catch {
+    return NextResponse.json(
+      { error: "Could not read the AI response. Try again." },
+      { status: 500 }
+    );
+  }
 }
