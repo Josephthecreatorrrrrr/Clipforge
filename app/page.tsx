@@ -1,3 +1,4 @@
+import ScriptForm from "./ScriptForm";
 export default function Home() {
   return (
     <>
@@ -22,8 +23,9 @@ export default function Home() {
           <a href="#pricing" className="btn">
             Create your first short
           </a>
-        </header>
-
+               </header>
+<section className="section" id="try">
+          <ScriptForm /></section>
         <section className="section" id="features">
           <h2>Everything you need</h2>
           <div className="grid">
